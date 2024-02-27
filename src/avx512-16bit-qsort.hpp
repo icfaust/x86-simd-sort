@@ -81,6 +81,10 @@ struct zmm_vector<float16> {
                           exp_eq, mant_x, mant_y, _MM_CMPINT_NLT);
         return _kxor_mask32(mask_ge, neg);
     }
+    static opmask_t eq(reg_t x, reg_t y)
+    {
+        return _mm512_cmpeq_epu16_mask(x, y);
+    }
     static opmask_t get_partial_loadmask(uint64_t num_to_read)
     {
         return ((0x1ull << num_to_read) - 0x1ull);
@@ -186,6 +190,9 @@ struct zmm_vector<float16> {
     {
         return v;
     }
+    static bool all_false(opmask_t k){
+        return k == 0;
+    }
     static int double_compressstore(type_t *left_addr,
                                     type_t *right_addr,
                                     opmask_t k,
@@ -237,6 +244,10 @@ struct zmm_vector<int16_t> {
     static opmask_t ge(reg_t x, reg_t y)
     {
         return _mm512_cmp_epi16_mask(x, y, _MM_CMPINT_NLT);
+    }
+    static opmask_t eq(reg_t x, reg_t y)
+    {
+        return _mm512_cmpeq_epi16_mask(x, y);
     }
     static opmask_t get_partial_loadmask(uint64_t num_to_read)
     {
@@ -323,6 +334,9 @@ struct zmm_vector<int16_t> {
     {
         return v;
     }
+    static bool all_false(opmask_t k){
+        return k == 0;
+    }
     static int double_compressstore(type_t *left_addr,
                                     type_t *right_addr,
                                     opmask_t k,
@@ -373,6 +387,10 @@ struct zmm_vector<uint16_t> {
     static opmask_t ge(reg_t x, reg_t y)
     {
         return _mm512_cmp_epu16_mask(x, y, _MM_CMPINT_NLT);
+    }
+    static opmask_t eq(reg_t x, reg_t y)
+    {
+        return _mm512_cmpeq_epu16_mask(x, y);
     }
     static opmask_t get_partial_loadmask(uint64_t num_to_read)
     {
@@ -457,6 +475,9 @@ struct zmm_vector<uint16_t> {
     {
         return v;
     }
+    static bool all_false(opmask_t k){
+        return k == 0;
+    }
     static int double_compressstore(type_t *left_addr,
                                     type_t *right_addr,
                                     opmask_t k,
@@ -502,9 +523,10 @@ replace_nan_with_inf<zmm_vector<float16>>(uint16_t *arr, arrsize_t arrsize)
 {
     arrsize_t nan_count = 0;
     __mmask16 loadmask = 0xFFFF;
-    for (arrsize_t ii = 0; ii < arrsize; ii = ii + zmm_vector<float16>::numlanes / 2) {
+    for (arrsize_t ii = 0; ii < arrsize;
+         ii = ii + zmm_vector<float16>::numlanes / 2) {
         if (arrsize - ii < 16) {
-            loadmask = (0x0001 << (arrsize-ii)) - 0x0001;
+            loadmask = (0x0001 << (arrsize - ii)) - 0x0001;
         }
         __m256i in_zmm = _mm256_maskz_loadu_epi16(loadmask, arr);
         __m512 in_zmm_asfloat = _mm512_cvtph_ps(in_zmm);

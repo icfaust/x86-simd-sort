@@ -68,12 +68,17 @@ struct avx2_vector<int64_t> {
     {
         return _mm256_set1_epi64x(type_max());
     } // TODO: this should broadcast bits as is?
+    static opmask_t knot_opmask(opmask_t x)
+    {
+        auto allTrue = _mm256_set1_epi64x(0xFFFF'FFFF'FFFF'FFFF);
+        return _mm256_xor_si256(x, allTrue);
+    }
     static opmask_t get_partial_loadmask(uint64_t num_to_read)
     {
         auto mask = ((0x1ull << num_to_read) - 0x1ull);
         return convert_int_to_avx2_mask_64bit(mask);
     }
-    static ymmi_t seti(int v1, int v2, int v3, int v4)
+    static ymmi_t seti(int64_t v1, int64_t v2, int64_t v3, int64_t v4)
     {
         return _mm256_set_epi64x(v1, v2, v3, v4);
     }
@@ -209,6 +214,9 @@ struct avx2_vector<int64_t> {
     {
         return v;
     }
+    static bool all_false(opmask_t k){
+        return _mm256_movemask_pd(_mm256_castsi256_pd(k)) == 0;
+    }
 };
 template <>
 struct avx2_vector<uint64_t> {
@@ -239,12 +247,17 @@ struct avx2_vector<uint64_t> {
     {
         return _mm256_set1_epi64x(type_max());
     }
+    static opmask_t knot_opmask(opmask_t x)
+    {
+        auto allTrue = _mm256_set1_epi64x(0xFFFF'FFFF'FFFF'FFFF);
+        return _mm256_xor_si256(x, allTrue);
+    }
     static opmask_t get_partial_loadmask(uint64_t num_to_read)
     {
         auto mask = ((0x1ull << num_to_read) - 0x1ull);
         return convert_int_to_avx2_mask_64bit(mask);
     }
-    static ymmi_t seti(int v1, int v2, int v3, int v4)
+    static ymmi_t seti(int64_t v1, int64_t v2, int64_t v3, int64_t v4)
     {
         return _mm256_set_epi64x(v1, v2, v3, v4);
     }
@@ -378,6 +391,9 @@ struct avx2_vector<uint64_t> {
     {
         return v;
     }
+    static bool all_false(opmask_t k){
+        return _mm256_movemask_pd(_mm256_castsi256_pd(k)) == 0;
+    }
 };
 
 /*
@@ -421,6 +437,11 @@ struct avx2_vector<double> {
     {
         return _mm256_set1_pd(type_max());
     }
+    static opmask_t knot_opmask(opmask_t x)
+    {
+        auto allTrue = _mm256_set1_epi64x(0xFFFF'FFFF'FFFF'FFFF);
+        return _mm256_xor_si256(x, allTrue);
+    }
     static opmask_t get_partial_loadmask(uint64_t num_to_read)
     {
         auto mask = ((0x1ull << num_to_read) - 0x1ull);
@@ -438,7 +459,7 @@ struct avx2_vector<double> {
         }
         return _mm256_castpd_si256(_mm256_cmp_pd(x, x, _CMP_UNORD_Q));
     }
-    static ymmi_t seti(int v1, int v2, int v3, int v4)
+    static ymmi_t seti(int64_t v1, int64_t v2, int64_t v3, int64_t v4)
     {
         return _mm256_set_epi64x(v1, v2, v3, v4);
     }
@@ -568,6 +589,9 @@ struct avx2_vector<double> {
     static __m256i cast_to(reg_t v)
     {
         return _mm256_castpd_si256(v);
+    }
+    static bool all_false(opmask_t k){
+        return _mm256_movemask_pd(_mm256_castsi256_pd(k)) == 0;
     }
 };
 
